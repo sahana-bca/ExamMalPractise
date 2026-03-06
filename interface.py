@@ -6,17 +6,81 @@ from alert_service import send_emails
 import webbrowser
 import subprocess
 import sys
+import atexit
+import signal
+import time
 
 from db import log_detection, init_db
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 app_path = os.path.join(SCRIPT_DIR, 'app.py')
-flask_process = subprocess.Popen(
-        [sys.executable, app_path],
-        cwd=SCRIPT_DIR,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+
+
+def _start_flask() -> subprocess.Popen:
+    kwargs = {
+        "cwd": SCRIPT_DIR,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        pass
+
+    return subprocess.Popen([sys.executable, app_path], **kwargs)
+
+
+flask_process = _start_flask()
+
+
+def _stop_flask_process() -> None:
+    p = flask_process
+    if not p or p.poll() is not None:
+        return
+
+    # Try graceful stop first.
+    try:
+        if os.name == "nt":
+            p.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            p.terminate()
+    except Exception:
+        pass
+
+    # Wait a bit, then force-kill if needed.
+    for _ in range(30):
+        if p.poll() is not None:
+            return
+        time.sleep(0.1)
+
+    try:
+        p.terminate()
+    except Exception:
+        pass
+
+    for _ in range(20):
+        if p.poll() is not None:
+            return
+        time.sleep(0.1)
+
+    try:
+        p.kill()
+    except Exception:
+        pass
+
+
+atexit.register(_stop_flask_process)
+
+
+def _handle_exit_signal(signum, frame):
+    _stop_flask_process()
+    raise SystemExit(0)
+
+
+for _sig in (getattr(signal, "SIGINT", None), getattr(signal, "SIGTERM", None)):
+    if _sig is not None:
+        try:
+            signal.signal(_sig, _handle_exit_signal)
+        except Exception:
+            pass
 
 webbrowser.open(f'http://localhost:5000')
 print(f"--->>> Flask Server Running on http://localhost:5000")

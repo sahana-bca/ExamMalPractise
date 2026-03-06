@@ -1,13 +1,16 @@
 from flask import Flask, render_template, send_from_directory, request
 import os
 
+from alert_service import RECEIVER as DEFAULT_RECEIVER, SENDER as DEFAULT_SENDER
 from db import (
     get_latest_images,
     get_receiver_email,
+    get_sender_email,
     get_stats as get_db_stats,
     init_db,
     run_readonly_query,
     set_receiver_email,
+    set_sender_email,
 )
 
 app = Flask(__name__)
@@ -45,7 +48,7 @@ def receiver_config():
         return {"ok": False, "error": "Local requests only."}, 403
 
     if request.method == 'GET':
-        return {"ok": True, "receiver": get_receiver_email(default="")}
+        return {"ok": True, "receiver": get_receiver_email(default=DEFAULT_RECEIVER) or ""}
 
     data = request.get_json(silent=True) or {}
     receiver = str(data.get("receiver", "")).strip()
@@ -53,6 +56,22 @@ def receiver_config():
         return {"ok": False, "error": "Invalid email."}, 400
     set_receiver_email(receiver_email=receiver)
     return {"ok": True, "receiver": receiver}
+
+
+@app.route('/api/config/sender', methods=['GET', 'POST'])
+def sender_config():
+    if not _is_local_request():
+        return {"ok": False, "error": "Local requests only."}, 403
+
+    if request.method == 'GET':
+        return {"ok": True, "sender": get_sender_email(default=DEFAULT_SENDER) or ""}
+
+    data = request.get_json(silent=True) or {}
+    sender = str(data.get("sender", "")).strip()
+    if not sender or "@" not in sender:
+        return {"ok": False, "error": "Invalid email."}, 400
+    set_sender_email(sender_email=sender)
+    return {"ok": True, "sender": sender}
 
 
 @app.route('/api/sql', methods=['POST'])
@@ -72,4 +91,6 @@ def sql_console():
     status = 200 if result.get("ok") else 400
     return result, status
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Disable reloader because interface.py starts this as a child process;
+    # the reloader would spawn an extra process that's harder to stop.
+    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)

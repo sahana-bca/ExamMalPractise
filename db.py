@@ -102,6 +102,14 @@ def set_receiver_email(*, receiver_email: str) -> None:
     set_config(key="receiver_email", value=receiver_email)
 
 
+def get_sender_email(*, default: Optional[str] = None) -> Optional[str]:
+    return get_config(key="sender_email", default=default)
+
+
+def set_sender_email(*, sender_email: str) -> None:
+    set_config(key="sender_email", value=sender_email)
+
+
 def run_readonly_query(*, sql: str, limit: int = 200) -> Dict[str, Any]:
     """Run a *read-only* SQL query and return a JSON-friendly result.
 

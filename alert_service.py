@@ -3,18 +3,36 @@ import imghdr
 import os
 from email.message import EmailMessage
 
-from db import get_receiver_email, log_alert
+from db import get_receiver_email, get_sender_email, log_alert
 
 SENDER = "dhanuvagman69@gmail.com"
 PASSWORD = ""
-RECEIVER = "dhanushinsit@gmail.com"
+RECEIVER = "sahanabb15@gmail.com"
 
 def send_emails(folder_path):
+    sender = get_sender_email(default=SENDER) or SENDER
     receiver = get_receiver_email(default=RECEIVER) or RECEIVER
+
+    try:
+        filenames = os.listdir(folder_path)
+    except Exception as e:
+        print(f"Cannot read folder '{folder_path}': {e}")
+        try:
+            log_alert(
+                folder_path=folder_path,
+                batch=_parse_batch(folder_path),
+                receiver=receiver,
+                attachments_count=0,
+                status="failed",
+                error_text=f"Cannot read folder: {e}",
+            )
+        except Exception:
+            pass
+        return
 
     msg = EmailMessage()
     msg['Subject'] = f"Malpractise Detected"
-    msg['From'] = SENDER
+    msg['From'] = sender
     msg['To'] = receiver
     msg.set_content(f"Malpractise alert: Attaching all images found in '{folder_path}'")
 
@@ -22,7 +40,7 @@ def send_emails(folder_path):
 
 
     files_found = 0
-    for filename in os.listdir(folder_path):
+    for filename in filenames:
         if filename.lower().endswith(valid_extensions):
             file_path = os.path.join(folder_path, filename)
             try:
@@ -54,7 +72,7 @@ def send_emails(folder_path):
         return
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(SENDER, PASSWORD)
+            smtp.login(sender, PASSWORD)
             smtp.send_message(msg)
         print(f"\nSuccess! Sent {files_found} images.")
         try:
