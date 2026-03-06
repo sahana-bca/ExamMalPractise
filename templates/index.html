@@ -4,161 +4,664 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YOLO Detection Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e; 
-            color: #eee; 
-            padding: 20px;
+        :root {
+            --bg:        #F5F6FA;
+            --surface:   #FFFFFF;
+            --surface2:  #F0F2F8;
+            --border:    #E3E6F0;
+            --accent:    #2563EB;
+            --accent-lt: #EEF3FF;
+            --accent2:   #0EA5E9;
+            --text:      #111827;
+            --muted:     #6B7280;
+            --success:   #10B981;
+            --radius:    14px;
+            --shadow:    0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+            --shadow-md: 0 8px 32px rgba(37,99,235,.10), 0 1px 4px rgba(0,0,0,.06);
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #16213e;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── TOP BAR ─────────────────────────────────────── */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 0 var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
             border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        .header h1 { color: #00d9ff; margin-bottom: 10px; }
+        .logo-icon svg { width: 20px; height: 20px; color: #fff; }
 
-        .stats { 
-            display: flex; 
-            justify-content: center; 
-            gap: 30px; 
-            margin-top: 15px;
+        .logo-text {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.02em;
         }
 
-        .stat-box {
-            background: #0f3460;
-            padding: 15px 30px;
+        .logo-sub {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--muted);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ECFDF5;
+            color: var(--success);
+            font-size: .78rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 99px;
+            border: 1px solid #A7F3D0;
+        }
+
+        .live-dot {
+            width: 7px; height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(.85); }
+        }
+
+        .btn-refresh {
+            display: flex; align-items: center; gap: 7px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
             border-radius: 8px;
+            font-family: inherit;
+            font-size: .85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s, box-shadow .2s, transform .15s;
+            box-shadow: 0 1px 4px rgba(37,99,235,.25);
+        }
+
+        .btn-refresh:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37,99,235,.35);
+        }
+
+        .btn-refresh:active { transform: translateY(0); }
+
+        /* ── HERO STATS ──────────────────────────────────── */
+        .hero {
+            max-width: 1300px;
+            margin: 32px auto 0;
+            padding: 0 24px;
+        }
+
+        .hero-inner {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #0ea5e9 100%);
+            border-radius: var(--radius);
+            padding: 36px 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-inner::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .hero-text h2 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .hero-text p {
+            color: rgba(255,255,255,.7);
+            font-size: .9rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,.12);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            padding: 16px 28px;
             text-align: center;
+            min-width: 110px;
         }
 
-        .stat-number { 
-            font-size: 2em; 
-            color: #00d9ff; 
-            font-weight: bold; 
+        .stat-number {
+            font-family: 'Sora', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
         }
 
-        .stat-label { 
-            color: #aaa; 
-            font-size: 0.9em; 
+        .stat-label {
+            font-size: .75rem;
+            color: rgba(255,255,255,.65);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* ── MAIN LAYOUT ─────────────────────────────────── */
+        .main {
+            max-width: 1300px;
+            margin: 28px auto 48px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* ── GALLERY ─────────────────────────────────────── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .section-title .dot {
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
         }
 
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
         }
 
         .card {
-            background: #16213e;
-            border-radius: 10px;
+            background: var(--surface);
+            border-radius: var(--radius);
             overflow: hidden;
-            transition: transform 0.3s;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform .25s, box-shadow .25s;
+            cursor: default;
         }
 
-        .card:hover { transform: translateY(-5px); }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-thumb {
+            position: relative;
+            overflow: hidden;
+        }
 
         .card img {
             width: 100%;
-            height: 250px;
+            height: 200px;
             object-fit: cover;
             display: block;
+            transition: transform .4s;
         }
 
-        .card-info { padding: 15px; }
+        .card:hover img { transform: scale(1.04); }
+
+        .card-overlay {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(37,99,235,.85);
+            color: #fff;
+            font-size: .7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 99px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .card-info { padding: 14px 16px; }
 
         .card-name {
-            color: #00d9ff;
-            font-weight: bold;
-            margin-bottom: 5px;
-            word-break: break-all;
+            font-size: .87rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .card-time {
-            color: #888;
-            font-size: 0.85em;
-            word-break: break-all;
+            color: var(--muted);
+            font-size: .76rem;
+            font-family: 'DM Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .empty {
+            grid-column: 1 / -1;
             text-align: center;
-            padding: 100px;
-            color: #666;
+            padding: 80px 24px;
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            color: var(--muted);
         }
 
-        .refresh-btn {
-            background: #00d9ff;
-            color: #1a1a2e;
+        .empty h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+
+        /* ── SIDEBAR ─────────────────────────────────────── */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-title {
+            font-family: 'Sora', sans-serif;
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .panel-title svg { color: var(--accent); width: 16px; height: 16px; }
+
+        .field { margin-bottom: 12px; }
+
+        .field label {
+            display: block;
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 6px;
+        }
+
+        .field-row { display: flex; gap: 8px; }
+
+        .input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .87rem;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+
+        .input::placeholder { color: #B0B8C8; }
+
+        textarea.input {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'DM Mono', monospace;
+            font-size: .8rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #fff;
             border: none;
-            padding: 10px 30px;
-            border-radius: 5px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .84rem;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
-            margin-top: 20px;
+            white-space: nowrap;
+            transition: background .2s, transform .15s;
         }
 
-        .refresh-btn:hover { background: #00b8d4; }
+        .btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-sm { padding: 7px 14px; font-size: .8rem; }
+
+        .status-text {
+            font-size: .78rem;
+            color: var(--muted);
+            margin-top: 6px;
+            min-height: 18px;
+        }
+
+        .status-text.ok { color: var(--success); font-weight: 600; }
+        .status-text.err { color: #EF4444; font-weight: 600; }
+
+        .console-out {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: .76rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            min-height: 56px;
+            line-height: 1.7;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        /* ── RESPONSIVE ──────────────────────────────────── */
+        @media (max-width: 960px) {
+            .main { grid-template-columns: 1fr; }
+            .sidebar { order: -1; }
+            .hero-inner { padding: 28px 24px; }
+        }
+
+        @media (max-width: 600px) {
+            .topbar { padding: 0 16px; }
+            .hero { padding: 0 12px; }
+            .main { padding: 0 12px; }
+            .logo-sub { display: none; }
+        }
     </style>
 </head>
-
 <body>
 
-    <div class="header">
-        <h1>YOLO Detection Dashboard</h1>
-        <p>Object detection results</p>
+<!-- TOP BAR -->
+<header class="topbar">
+    <div class="logo">
+        <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="20" rx="2"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M2 9h3M19 9h3M2 15h3M19 15h3M9 2v3M9 19v3M15 2v3M15 19v3"/>
+            </svg>
+        </div>
+        <div>
+            <div class="logo-text">YOLO Detection</div>
+            <div class="logo-sub">Dashboard</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="live-badge">
+            <span class="live-dot"></span>Live
+        </div>
+        <button class="btn-refresh" onclick="location.reload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Refresh
+        </button>
+    </div>
+</header>
 
-        <div class="stats">
-            <div class="stat-box">
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-text">
+            <h2>Object Detection Results</h2>
+            <p>Real-time YOLO inference · Auto-refreshes every 10 s</p>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card">
                 <div class="stat-number" id="total-count">{{ images|length }}</div>
-                <div class="stat-label">Total Detections</div>
+                <div class="stat-label">Detections</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- GALLERY -->
+    <div class="gallery-area">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="dot"></span>Detection Images
+            </div>
+        </div>
+        <div class="gallery">
+            {% if images %}
+                {% for image in images %}
+                <div class="card">
+                    <div class="card-thumb">
+                        <img loading="lazy"
+                             src="{{ url_for('serve_image', filename=image|replace('\\','/')) }}"
+                             alt="Detection Image">
+                        <div class="card-overlay">Detected</div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">{{ image.split('/')[-1] }}</div>
+                        <div class="card-time">{{ image }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty">
+                    <h3>No detections yet</h3>
+                    <p>Start the detection process to see results here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <!-- Settings panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1.65 1.5V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.5-1.65H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1.65-1.5V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.5 1.65H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/>
+                </svg>
+                Settings
+            </div>
+
+            <div class="field">
+                <label>Alert Receiver Email</label>
+                <div class="field-row">
+                    <input class="input" id="receiver-email" type="email" placeholder="name@example.com" />
+                    <button class="btn btn-sm" id="save-receiver">Save</button>
+                </div>
+                <div class="status-text" id="receiver-status"></div>
             </div>
         </div>
 
-        <button class="refresh-btn" onclick="location.reload()">Refresh</button>
-    </div>
-
-    <div class="gallery">
-        {% if images %}
-            {% for image in images %}
-            <div class="card">
-                <img loading="lazy"
-                     src="{{ url_for('serve_image', filename=image|replace('\\','/')) }}"
-                     alt="Detection Image">
-                <div class="card-info">
-                    <div class="card-name">
-                        {{ image.split('/')[-1] }}
-                    </div>
-                    <div class="card-time">
-                        {{ image }}
-                    </div>
-                </div>
+        <!-- SQL Console panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                </svg>
+                SQL Console
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty">
-                <h2>No detections yet</h2>
-                <p>Start detection process to see results.</p>
+            <div class="status-text" style="margin-bottom:10px; margin-top:-8px;">Allowed: SELECT · WITH · PRAGMA (single statement)</div>
+
+            <div class="field">
+                <textarea class="input" id="sql-input" spellcheck="false"
+                    placeholder="SELECT * FROM detections ORDER BY id DESC LIMIT 5"></textarea>
             </div>
-        {% endif %}
-    </div>
 
-    <script>
-        setInterval(() => {
-            fetch('/api/stats')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('total-count').textContent = data.total_detections;
-                });
-        }, 10000);
-    </script>
+            <div class="field-row">
+                <button class="btn btn-sm" id="run-sql">
+                    Run Query
+                </button>
+                <div class="status-text" id="sql-status" style="margin-top:0; align-self:center;"></div>
+            </div>
 
+            <div class="console-out" id="sql-output">Ready.</div>
+        </div>
+
+    </aside>
+</div>
+
+<script>
+    // helpers
+    function setStatus(id, text, type='') {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'status-text' + (type ? ' ' + type : '');
+    }
+
+    // live stats
+    setInterval(() => {
+        fetch('/api/stats')
+            .then(r => r.json())
+            .then(d => { document.getElementById('total-count').textContent = d.total_detections; })
+            .catch(() => {});
+    }, 10000);
+
+    // load receiver
+    fetch('/api/config/receiver')
+        .then(r => r.json())
+        .then(d => {
+            if (d && d.ok) {
+                document.getElementById('receiver-email').value = d.receiver || '';
+                setStatus('receiver-status', 'Loaded', 'ok');
+            } else {
+                setStatus('receiver-status', (d && d.error) ? d.error : 'Failed to load', 'err');
+            }
+        })
+        .catch(() => setStatus('receiver-status', 'Failed to load', 'err'));
+
+    document.getElementById('save-receiver').addEventListener('click', () => {
+        const receiver = (document.getElementById('receiver-email').value || '').trim();
+        setStatus('receiver-status', 'Saving…');
+        fetch('/api/config/receiver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ receiver })
+        })
+        .then(r => r.json().then(j => ({ s: r.status, j })))
+        .then(({ s, j }) => {
+            if (s >= 200 && s < 300 && j && j.ok) setStatus('receiver-status', 'Saved ✓', 'ok');
+            else setStatus('receiver-status', (j && j.error) ? j.error : 'Save failed', 'err');
+        })
+        .catch(() => setStatus('receiver-status', 'Save failed', 'err'));
+    });
+
+    // SQL console
+    function formatTable(columns, rows) {
+        if (!columns || !columns.length) return 'No columns.';
+        if (!rows || !rows.length) return columns.join('\t') + '\n(no rows)';
+        const lines = [columns.join('\t'), '─'.repeat(Math.min(120, columns.join('\t').length))];
+        for (const r of rows)
+            lines.push(r.map(v => v == null ? 'NULL' : String(v)).join('\t'));
+        return lines.join('\n');
+    }
+
+    document.getElementById('run-sql').addEventListener('click', () => {
+        const sql = document.getElementById('sql-input').value || '';
+        setStatus('sql-status', 'Running…');
+        document.getElementById('sql-output').textContent = '';
+        fetch('/api/sql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql, limit: 200 })
+        })
+        .then(r => r.json().then(j => ({ s: r.status, j })))
+        .then(({ s, j }) => {
+            if (s >= 200 && s < 300 && j && j.ok) {
+                setStatus('sql-status', `OK — ${j.row_count} row${j.row_count !== 1 ? 's' : ''}`, 'ok');
+                document.getElementById('sql-output').textContent = formatTable(j.columns, j.rows);
+            } else {
+                setStatus('sql-status', 'Error', 'err');
+                document.getElementById('sql-output').textContent = (j && j.error) ? j.error : 'Query failed';
+            }
+        })
+        .catch(() => {
+            setStatus('sql-status', 'Error', 'err');
+            document.getElementById('sql-output').textContent = 'Query failed';
+        });
+    });
+</script>
 </body>
 </html>

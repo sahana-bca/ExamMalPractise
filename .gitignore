@@ -1,0 +1,4 @@
+batch/
+__pycache__/
+malpractice.db
+*.db

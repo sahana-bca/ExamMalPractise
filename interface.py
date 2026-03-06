@@ -7,6 +7,8 @@ import webbrowser
 import subprocess
 import sys
 
+from db import log_detection, init_db
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 app_path = os.path.join(SCRIPT_DIR, 'app.py')
 flask_process = subprocess.Popen(
@@ -19,6 +21,8 @@ flask_process = subprocess.Popen(
 webbrowser.open(f'http://localhost:5000')
 print(f"--->>> Flask Server Running on http://localhost:5000")
 model = YOLO('best.pt')
+
+init_db()
 
 batch = 0
 img_cnt = 0
@@ -44,8 +48,23 @@ for result in results:
             batch_dir = f'batch/{batch}'
             os.makedirs(batch_dir, exist_ok=True)
             
-        
+            image_rel_path = f'{batch}/{img_cnt}.jpg'
             cv2.imwrite(f'{batch_dir}/{img_cnt}.jpg', im_bgr)
+
+            try:
+                labels = []
+                if boxes is not None and hasattr(boxes, "cls") and hasattr(boxes, "conf"):
+                    cls_list = boxes.cls.tolist() if hasattr(boxes.cls, "tolist") else list(boxes.cls)
+                    conf_list = boxes.conf.tolist() if hasattr(boxes.conf, "tolist") else list(boxes.conf)
+                    names = getattr(result, "names", None) or {}
+                    for cls_id, conf in zip(cls_list, conf_list):
+                        name = names.get(int(cls_id), str(int(cls_id)))
+                        labels.append({"class": name, "conf": float(conf)})
+
+                max_conf = max((float(x.get("conf", 0.0)) for x in labels), default=None)
+                log_detection(image_path=image_rel_path, batch=batch, labels=labels, max_conf=max_conf)
+            except Exception:
+                pass
             img_cnt += 1
             
             if img_cnt >= BATCH_SIZE:
